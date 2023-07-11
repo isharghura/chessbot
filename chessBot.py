@@ -33,3 +33,7 @@ class Bot:
 
                 elif(value<newCandidate and depth%2==0):
                     newCandidate=value
+
+                if(candidate!=None and value < candidate and depth%2==0):
+                    self.board.pop()
+                    break
