@@ -1,26 +1,46 @@
 import chess as ch
 import random as rd
+import discord
+from discord import Intents
+
+
+def run_discord_bot():
+    TOKEN = "MTEyODc0NjM1MzYyMzg0MjkwNw.Gig_CF.olPjzc7EbM7Fdyf7aKw6oQ-XVLVYdSdT2Nr81Q"
+
+    # create an instance of Intents
+    intents = Intents.default()
+    intents.typing = False
+    intents.presences = False
+
+    client = discord.Client(intents=intents)
+
+    @client.event
+    async def on_ready():
+        print(f"{client.user} is running!")
+
+    client.run(TOKEN)
+
 
 class Bot:
-    #initialise class
+    # initialise class
     def __init__(self, board, maxDepth, color):
         self.board = board
         self.maxDepth = maxDepth
         self.color = color
-    
-    #call bot() to find the best move starting with a depth of 1
+
+    # call bot() to find the best move starting with a depth of 1
     def bestMove(self):
         return self.bot(None, 1)
-    
-    #determines who is winning, white (+) or black (-)
+
+    # determines who is winning, white (+) or black (-)
     def evalFunction(self):
         compt = 0
         for i in range(64):
             compt += self.squareResPoints(ch.SQUARES[i])
         compt += self.mateOpportunity() + self.opening() + 0.001 * rd.random()
         return compt
-    
-    #is the game still in opening or not? encourages bot to develop pieces
+
+    # is the game still in opening or not? encourages bot to develop pieces
     def opening(self):
         if self.board.fullmove_number < 10:
             if self.board.turn == self.color:
@@ -29,8 +49,8 @@ class Bot:
                 return 1 / 30 * self.board.legal_moves.count()
         else:
             return 0
-    
-    #once there are no more legal moves it is either checkmate or stalemate
+
+    # once there are no more legal moves it is either checkmate or stalemate
     def mateOpportunity(self):
         if self.board.legal_moves.count() == 0:
             if self.board.turn == self.color:
@@ -39,8 +59,8 @@ class Bot:
                 return 999
         else:
             return 0
-        
-    #assigns values to each piece
+
+    # assigns values to each piece
     def squareResPoints(self, square):
         pieceValue = 0
         if self.board.piece_type_at(square) == ch.PAWN:
@@ -54,8 +74,8 @@ class Bot:
         if self.board.piece_type_at(square) == ch.QUEEN:
             pieceValue = 8.8
         return pieceValue
-    
-    #minimax algorithm and alpha-beta pruning
+
+    # minimax algorithm and alpha-beta pruning
     def bot(self, candidate, depth):
         if depth == self.maxDepth or self.board.legal_moves.count() == 0:
             return self.evalFunction()
@@ -96,4 +116,4 @@ class Bot:
         if depth > 1:
             return candidate
         else:
-            return bestMove 
+            return bestMove
