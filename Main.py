@@ -3,7 +3,7 @@ import chess as ch
 
 
 class Main:
-    def __init__(self, board=ch.board):
+    def __init__(self, board=ch.Board):
         self.board = board
 
     def playHumanMove(self):
@@ -22,7 +22,7 @@ class Main:
 
     def playBotMove(self, maxDepth, color):
         bot = cb.Bot(self, maxDepth, color)
-        self.board.push(bot.getBestMove())
+        self.board.push(bot.bestMove())
 
     def startGame(self):
         color = None

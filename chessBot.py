@@ -49,7 +49,7 @@ class Bot:
             pieceValue = 8.8
 
     def bot(self, candidate, depth):
-        if depth == self.maxDepth or self.board.legal_moves.count() == 0:
+        if (depth == self.maxDepth or self.board.legal_moves.count() == 0):
             return self.evalFunction()
 
         else:
