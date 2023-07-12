@@ -2,21 +2,25 @@ import chess as ch
 import random as rd
 
 class Bot:
+    #initialise class
     def __init__(self, board, maxDepth, color):
         self.board = board
         self.maxDepth = maxDepth
         self.color = color
-
+    
+    #call bot() to find the best move starting with a depth of 1
     def bestMove(self):
         return self.bot(None, 1)
-
+    
+    #determines who is winning, white (+) or black (-)
     def evalFunction(self):
         compt = 0
         for i in range(64):
             compt += self.squareResPoints(ch.SQUARES[i])
         compt += self.mateOpportunity() + self.opening() + 0.001 * rd.random()
-        return compt  # Make sure to return the computed value
-
+        return compt
+    
+    #is the game still in opening or not? encourages bot to develop pieces
     def opening(self):
         if self.board.fullmove_number < 10:
             if self.board.turn == self.color:
@@ -25,7 +29,8 @@ class Bot:
                 return 1 / 30 * self.board.legal_moves.count()
         else:
             return 0
-
+    
+    #once there are no more legal moves it is either checkmate or stalemate
     def mateOpportunity(self):
         if self.board.legal_moves.count() == 0:
             if self.board.turn == self.color:
@@ -34,7 +39,8 @@ class Bot:
                 return 999
         else:
             return 0
-
+        
+    #assigns values to each piece
     def squareResPoints(self, square):
         pieceValue = 0
         if self.board.piece_type_at(square) == ch.PAWN:
@@ -47,8 +53,9 @@ class Bot:
             pieceValue = 5.1
         if self.board.piece_type_at(square) == ch.QUEEN:
             pieceValue = 8.8
-        return pieceValue  # Make sure to return the computed piece value
-
+        return pieceValue
+    
+    #minimax algorithm and alpha-beta pruning
     def bot(self, candidate, depth):
         if depth == self.maxDepth or self.board.legal_moves.count() == 0:
             return self.evalFunction()

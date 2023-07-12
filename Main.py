@@ -3,14 +3,16 @@ import chess as ch
 
 
 class Main:
+    #initialise
     def __init__(self, board=ch.Board):
         self.board = board
 
+    #ask for a move
     def playHumanMove(self):
         try:
             print(self.board.legal_moves)
             print("To undo your last move, type 'undo'.")
-            play = input("Your move: ")
+            play = input("Make a move: ")
             if play == "undo":
                 self.board.pop()
                 self.board.pop()
@@ -20,10 +22,12 @@ class Main:
         except:
             self.playHumanMove()
 
+    # bot move
     def playBotMove(self, maxDepth, color):
         bot = cb.Bot(self.board, maxDepth, color)
         self.board.push(bot.bestMove())
-
+    
+    # color, depth, begin
     def startGame(self):
         color = None
         while color != "b" and color != "w":
@@ -52,7 +56,7 @@ class Main:
         self.board.reset
         self.startGame()
 
-
+# create a new board and start
 newBoard = ch.Board()
 game = Main(newBoard)
 game.startGame()
