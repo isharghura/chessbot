@@ -1,3 +1,4 @@
+import json
 import chess as ch
 import random as rd
 import discord
@@ -5,7 +6,9 @@ from discord import Intents
 
 
 def run_discord_bot():
-    TOKEN = "MTEyODc0NjM1MzYyMzg0MjkwNw.Gig_CF.olPjzc7EbM7Fdyf7aKw6oQ-XVLVYdSdT2Nr81Q"
+    # Load configuration from config.json
+    with open("config.json") as config_file:
+        config = json.load(config_file)
 
     # create an instance of Intents
     intents = Intents.default()
@@ -18,7 +21,7 @@ def run_discord_bot():
     async def on_ready():
         print(f"{client.user} is running!")
 
-    client.run(TOKEN)
+    client.login(config["token"])
 
 
 class Bot:
