@@ -21,7 +21,7 @@ class Main:
             self.playHumanMove()
 
     def playBotMove(self, maxDepth, color):
-        bot = cb.Bot(self, maxDepth, color)
+        bot = cb.Bot(self.board, maxDepth, color)
         self.board.push(bot.bestMove())
 
     def startGame(self):

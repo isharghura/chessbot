@@ -1,7 +1,6 @@
 import chess as ch
 import random as rd
 
-
 class Bot:
     def __init__(self, board, maxDepth, color):
         self.board = board
@@ -16,6 +15,7 @@ class Bot:
         for i in range(64):
             compt += self.squareResPoints(ch.SQUARES[i])
         compt += self.mateOpportunity() + self.opening() + 0.001 * rd.random()
+        return compt  # Make sure to return the computed value
 
     def opening(self):
         if self.board.fullmove_number < 10:
@@ -47,14 +47,13 @@ class Bot:
             pieceValue = 5.1
         if self.board.piece_type_at(square) == ch.QUEEN:
             pieceValue = 8.8
+        return pieceValue  # Make sure to return the computed piece value
 
     def bot(self, candidate, depth):
-        if (depth == self.maxDepth or self.board.legal_moves.count() == 0):
+        if depth == self.maxDepth or self.board.legal_moves.count() == 0:
             return self.evalFunction()
-
         else:
             moveList = list(self.board.legal_moves)
-
             newCandidate = None
 
             if depth % 2 != 0:
@@ -62,24 +61,24 @@ class Bot:
             else:
                 newCandidate = float("inf")
 
-            for i in moveList:
-                self.board.push()
+            for move in moveList:
+                self.board.push(move)
 
                 value = self.bot(newCandidate, depth + 1)
 
                 if value > newCandidate and depth % 2 != 0:
                     newCandidate = value
                     if depth == 1:
-                        move = i
+                        bestMove = move
 
                 elif value < newCandidate and depth % 2 == 0:
                     newCandidate = value
 
-                if candidate != None and value < candidate and depth % 2 == 0:
+                if candidate is not None and value < candidate and depth % 2 == 0:
                     self.board.pop()
                     break
 
-                elif candidate != None and value > candidate and depth % 2 != 0:
+                elif candidate is not None and value > candidate and depth % 2 != 0:
                     self.board.pop()
                     break
 
@@ -88,4 +87,4 @@ class Bot:
         if depth > 1:
             return candidate
         else:
-            return move
+            return bestMove 
