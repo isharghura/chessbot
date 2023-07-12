@@ -68,6 +68,8 @@ class Bot:
             else:
                 newCandidate = float("inf")
 
+            bestMove = moveList[0] if moveList else None
+
             for move in moveList:
                 self.board.push(move)
 
