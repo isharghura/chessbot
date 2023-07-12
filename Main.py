@@ -2,7 +2,9 @@ import chessBot as cb
 import chess as ch
 
 if __name__ == "__main__":
-    cb.run_discord_bot()
+    import asyncio
+
+    asyncio.run(cb.run_discord_bot())
 
 # class Main:
 #     #initialise

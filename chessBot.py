@@ -5,12 +5,12 @@ import discord
 from discord import Intents
 
 
-def run_discord_bot():
+async def run_discord_bot():
     # Load configuration from config.json
     with open("config.json") as config_file:
         config = json.load(config_file)
 
-    # create an instance of Intents
+    # Create an instance of Intents
     intents = Intents.default()
     intents.typing = False
     intents.presences = False
@@ -21,7 +21,9 @@ def run_discord_bot():
     async def on_ready():
         print(f"{client.user} is running!")
 
-    client.login(config["token"])
+    await client.login(config["token"])
+
+    await client.start(config["token"])
 
 
 class Bot:
