@@ -37,7 +37,7 @@ class Main:
             await self.playHumanMove(message)
 
     def playBotMove(self, maxDepth, color):
-        bot = Bot(self.board, maxDepth, color)
+        bot = cb.Bot(self.board, maxDepth, color)
         self.board.push(bot.bestMove())
 
     async def startGame(self, message):
