@@ -1,25 +1,115 @@
 import asyncio
 import json
+import logging
 import chess as ch
 import random as rd
-from discord import Intents
+import discord
 from discord.ext import commands
 
 
-class Bot:
-    def __init__(self, board, maxDepth, color):
+class ChessGame:
+    def __init__(self, board=ch.Board()):
         self.board = board
-        self.maxDepth = maxDepth
+
+    async def playHumanMove(self, message):
+        try:
+            await message.channel.send(
+                "Legal moves: " + str(list(self.board.legal_moves))
+            )
+            await message.channel.send("To undo your last move, type 'undo'.")
+            await message.channel.send("Make your move:")
+
+            def check(m):
+                return m.author == message.author and m.channel == message.channel
+
+            response = await message.client.wait_for("message", check=check)
+            move = response.content.lower()
+
+            if move == "/help":
+                await message.channel.send(
+                    "Type in a legal move, for example: 'e4' or 'e5' or type 'undo'."
+                )
+                await self.playHumanMove(message)
+            elif move == "undo":
+                self.board.pop()
+                self.board.pop()
+                await message.channel.send(str(self.board))
+                await self.playHumanMove(message)
+            elif ch.Move.from_uci(move) in self.board.legal_moves:
+                self.board.push_uci(move)
+                await message.channel.send(str(self.board))
+            else:
+                await message.channel.send("Invalid move. Please try again.")
+                await self.playHumanMove(message)
+
+        except Exception as e:
+            await message.channel.send("An error occurred. Please try again.")
+            await self.playHumanMove(message)
+
+    def play_bot_move(self, max_depth, color):
+        bot = Bot(self.board, max_depth, color)
+        self.board.push(bot.best_move())
+
+    async def start_game(self, ctx):
+        color = None
+        while color != "b" and color != "w":
+            await ctx.send("To pick a color, type 'w' or 'b':")
+            response = await ctx.bot.wait_for(
+                "message",
+                check=lambda m: m.author == ctx.author and m.channel == ctx.channel,
+            )
+            color = response.content.lower()
+
+        max_depth = None
+        while not isinstance(max_depth, int):
+            await ctx.send("Choose depth:")
+            response = await ctx.bot.wait_for(
+                "message",
+                check=lambda m: m.author == ctx.author and m.channel == ctx.channel,
+            )
+            try:
+                max_depth = int(response.content)
+            except ValueError:
+                pass
+
+        if color == "b":
+            while not self.board.is_checkmate():
+                await ctx.send("Thinking...")
+                self.play_bot_move(max_depth, ch.WHITE)
+                await ctx.send(str(self.board))
+                await self.play_human_move(ctx)
+                await ctx.send(str(self.board))
+
+            await ctx.send(str(self.board))
+            await ctx.send(str(self.board.outcome()))
+        elif color == "w":
+            while not self.board.is_checkmate():
+                await ctx.send(str(self.board))
+                await self.play_human_move(ctx)
+                await ctx.send(str(self.board))
+                await ctx.send("Thinking...")
+                self.play_bot_move(max_depth, ch.BLACK)
+
+            await ctx.send(str(self.board))
+            await ctx.send(str(self.board.outcome()))
+
+        self.board.reset()
+
+
+class Bot:
+    def __init__(self, board, max_depth, color):
+        self.board = board
+        self.max_depth = max_depth
         self.color = color
 
-    def bestMove(self):
+    def best_move(self):
         return self.bot(None, 1)
 
-    def evalFunction(self):
+    def eval_function(self):
         compt = 0
         for i in range(64):
-            compt += self.squareResPoints(ch.SQUARES[i])
-        compt += self.mateOpportunity() + self.opening() + 0.001 * rd.random()
+            compt += self.square_res_points(ch.SQUARES[i])
+        compt += self.mate_opportunity() + self.opening() + 0.001 * rd.random()
         return compt
 
     def opening(self):
@@ -31,7 +121,7 @@ class Bot:
         else:
             return 0
 
-    def mateOpportunity(self):
+    def mate_opportunity(self):
         if self.board.legal_moves.count() == 0:
             if self.board.turn == self.color:
                 return -999
@@ -40,46 +130,46 @@ class Bot:
         else:
             return 0
 
-    def squareResPoints(self, square):
-        pieceValue = 0
+    def square_res_points(self, square):
+        piece_value = 0
         if self.board.piece_type_at(square) == ch.PAWN:
-            pieceValue = 1
+            piece_value = 1
         if self.board.piece_type_at(square) == ch.KNIGHT:
-            pieceValue = 3.2
+            piece_value = 3.2
         if self.board.piece_type_at(square) == ch.BISHOP:
-            pieceValue = 3.33
+            piece_value = 3.33
         if self.board.piece_type_at(square) == ch.ROOK:
-            pieceValue = 5.1
+            piece_value = 5.1
         if self.board.piece_type_at(square) == ch.QUEEN:
-            pieceValue = 8.8
-        return pieceValue
+            piece_value = 8.8
+        return piece_value
 
     def bot(self, candidate, depth):
-        if depth == self.maxDepth or self.board.legal_moves.count() == 0:
-            return self.evalFunction()
+        if depth == self.max_depth or self.board.legal_moves.count() == 0:
+            return self.eval_function()
         else:
-            moveList = list(self.board.legal_moves)
-            newCandidate = None
+            move_list = list(self.board.legal_moves)
+            new_candidate = None
 
             if depth % 2 != 0:
-                newCandidate = float("-inf")
+                new_candidate = float("-inf")
             else:
-                newCandidate = float("inf")
+                new_candidate = float("inf")
 
-            bestMove = moveList[0] if moveList else None
+            best_move = move_list[0] if move_list else None
 
-            for move in moveList:
+            for move in move_list:
                 self.board.push(move)
 
-                value = self.bot(newCandidate, depth + 1)
+                value = self.bot(new_candidate, depth + 1)
 
-                if value > newCandidate and depth % 2 != 0:
-                    newCandidate = value
+                if value > new_candidate and depth % 2 != 0:
+                    new_candidate = value
                     if depth == 1:
-                        bestMove = move
+                        best_move = move
 
-                elif value < newCandidate and depth % 2 == 0:
-                    newCandidate = value
+                elif value < new_candidate and depth % 2 == 0:
+                    new_candidate = value
 
                 if candidate is not None and value < candidate and depth % 2 == 0:
                     self.board.pop()
@@ -94,96 +184,12 @@ class Bot:
         if depth > 1:
             return candidate
         else:
-            return bestMove
+            return best_move
 
 
-class Main:
-    def __init__(self, board=ch.Board):
-        self.board = board
+intents = discord.Intents.default()
+intents.message_content = True
 
-    async def playHumanMove(self, message):
-        try:
-            await message.channel.send(
-                "Legal moves: " + str(list(self.board.legal_moves))
-            )
-            await message.channel.send("To undo your last move, type 'undo'.")
-            user_move = await message.channel.send("Make your move:")
-
-            def check(m):
-                return m.author == message.author and m.channel == message.channel
-
-            response = await message.client.wait_for("message", check=check)
-            move = response.content
-
-            if move == "/help":
-                await message.channel.send(
-                    "Type in a legal move, for example: 'e4' or 'e5' or type 'undo'"
-                )
-            elif move == "undo":
-                self.board.pop()
-                self.board.pop()
-                await self.playHumanMove(message)
-                return
-            else:
-                self.board.push_san(move)
-
-        except Exception as e:
-            await message.channel.send("Invalid move. Please try again.")
-            await self.playHumanMove(message)
-
-    def playBotMove(self, maxDepth, color):
-        bot = Bot(self.board, maxDepth, color)
-        self.board.push(bot.bestMove())
-
-    async def startGame(self, message):
-        color = None
-        while color != "b" and color != "w":
-            await message.channel.send("To pick a color, type 'w' or 'b':")
-            response = await message.client.wait_for(
-                "message",
-                check=lambda m: m.author == message.author
-                and m.channel == message.channel,
-            )
-            color = response.content.lower()
-
-        maxDepth = None
-        while not isinstance(maxDepth, int):
-            await message.channel.send("Choose depth:")
-            response = await message.client.wait_for(
-                "message",
-                check=lambda m: m.author == message.author
-                and m.channel == message.channel,
-            )
-            try:
-                maxDepth = int(response.content)
-            except ValueError:
-                pass
-
-        if color == "b":
-            while not self.board.is_checkmate():
-                await message.channel.send("Thinking...")
-                self.playBotMove(maxDepth, ch.WHITE)
-                await message.channel.send(str(self.board))
-                await self.playHumanMove(message)
-                await message.channel.send(str(self.board))
-
-            await message.channel.send(str(self.board))
-            await message.channel.send(str(self.board.outcome()))
-        elif color == "w":
-            while not self.board.is_checkmate():
-                await message.channel.send(str(self.board))
-                await self.playHumanMove(message)
-                await message.channel.send(str(self.board))
-                await message.channel.send("Thinking...")
-                self.playBotMove(maxDepth, ch.BLACK)
-
-            await message.channel.send(str(self.board))
-            await message.channel.send(str(self.board.outcome()))
-
-        self.board.reset()
-
-
-intents = Intents.default()
 bot = commands.Bot(command_prefix="/", intents=intents)
 
 
@@ -192,33 +198,20 @@ async def on_ready():
     print(f"{bot.user} is running!")
 
 
-@bot.command()
-async def startchess(ctx):
+@bot.command(name="startchess")
+async def start_chess(ctx):
     print("Start chess command received")
 
-    newBoard = ch.Board()
-    game = Main(newBoard)
-    await game.startGame(ctx.message)
-
-
-@bot.event
-async def on_message(message):
-    if message.author == bot.user:
-        return
-
-    await bot.process_commands(message)
-    print("Received message:", message.content)
+    new_board = ch.Board()
+    game = ChessGame(new_board)
+    await game.start_game(ctx)
 
 
 async def run_discord_bot():
     with open("config.json") as config_file:
         config = json.load(config_file)
 
-    intents.typing = False
-    intents.presences = False
-
     try:
-        await bot.login(config["token"])
         await bot.start(config["token"])
         await asyncio.sleep(86400)
     finally:
