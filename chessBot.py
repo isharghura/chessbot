@@ -14,13 +14,13 @@ class ChessGame:
     def __init__(self, bot, board=ch.Board()):
         self.bot = bot
         self.board = board
+        self.running = False
 
     async def play_human_move(self, message, max_depth):
         try:
             await message.channel.send(
                 "Legal moves: " + str(list(self.board.legal_moves))
             )
-            await message.channel.send("To undo your last move, type 'undo'.")
             await message.channel.send("Make your move:")
 
             def check(m):
@@ -31,32 +31,19 @@ class ChessGame:
 
             if move == "/help":
                 await message.channel.send(
-                    "Type in a legal move, for example: 'e4' or 'e5' or type 'undo'."
+                    "Type in a legal move, for example: 'e4' or 'e5'."
                 )
                 await self.play_human_move(message, max_depth)
-            elif move == "undo":
-                self.board.pop()
-                self.board.pop()
-                await message.channel.send("Move undone.")
-                await self.play_human_move(message, max_depth)
+            elif move == "/exit":
+                await message.channel.send("Game has been exited.")
+                self.running = False
+                return
             else:
                 try:
-                    if len(move) == 2:
-                        # Handle simplified move format (e.g., 'e4')
-                        moves = list(self.board.legal_moves)
-                        for legal_move in moves:
-                            if move == ch.square_name(legal_move.to_square):
-                                move = legal_move
-                                break
-                        else:
-                            raise ValueError("Invalid move. Please try again.")
-                    else:
-                        move = self.board.parse_san(move)
+                    move = self.board.parse_san(move)
 
                     if move in self.board.legal_moves:
                         self.board.push(move)
-                        await self.play_bot_move(max_depth)  # Bot makes a move
-                        await message.channel.send(str(self.board))  # Print the board
                     else:
                         raise ValueError("Invalid move. Please try again.")
                 except ValueError as e:
@@ -72,11 +59,15 @@ class ChessGame:
             await self.play_human_move(message, max_depth)
 
     async def play_bot_move(self, max_depth):
-        bot = Bot(self.board, max_depth, self.board.turn)
+        if not self.running:
+            return
+
+        bot = Bot(self.board, max_depth, not self.board.turn)  # Invert the turn
         move = bot.best_move()
         self.board.push(move)
 
     async def start_game(self, ctx):
+        self.running = True
         color = None
         while color != "b" and color != "w":
             await ctx.send("To pick a color, type 'w' or 'b':")
@@ -100,26 +91,39 @@ class ChessGame:
 
         if color == "b":
             await ctx.send(str(self.board))
-            while not self.board.is_checkmate():
-                await self.play_human_move(ctx, max_depth)
-                if self.board.is_checkmate():
-                    break
-                await ctx.send("Thinking...")
+            while (
+                self.running
+                and not self.board.is_checkmate()
+                and not self.board.is_stalemate()
+            ):
                 await self.play_bot_move(max_depth)
+                if not self.running:
+                    break
+                if self.board.is_checkmate() or self.board.is_stalemate():
+                    break
                 await ctx.send(str(self.board))
+                await self.play_human_move(ctx, max_depth)
+                if not self.running:
+                    break
 
-            await ctx.send(str(self.board))
-            await ctx.send(str(self.board.outcome()))
         elif color == "w":
-            while not self.board.is_checkmate():
-                await ctx.send(str(self.board))
-                if self.board.is_checkmate():
-                    break
+            await ctx.send(str(self.board))
+            while (
+                self.running
+                and not self.board.is_checkmate()
+                and not self.board.is_stalemate()
+            ):
                 await self.play_human_move(ctx, max_depth)
-                await ctx.send("Thinking...")
-                await self.play_bot_move(max_depth)
+                if not self.running:
+                    break
+                if self.board.is_checkmate() or self.board.is_stalemate():
+                    break
                 await ctx.send(str(self.board))
+                await self.play_bot_move(max_depth)
+                if not self.running:
+                    break
 
+        if self.running:
             await ctx.send(str(self.board))
             await ctx.send(str(self.board.outcome()))
 
