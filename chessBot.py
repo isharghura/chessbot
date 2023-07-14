@@ -11,7 +11,7 @@ class ChessGame:
     def __init__(self, board=ch.Board()):
         self.board = board
 
-    async def playHumanMove(self, message):
+    async def play_human_move(self, message, max_depth):
         try:
             await message.channel.send(
                 "Legal moves: " + str(list(self.board.legal_moves))
@@ -29,22 +29,25 @@ class ChessGame:
                 await message.channel.send(
                     "Type in a legal move, for example: 'e4' or 'e5' or type 'undo'."
                 )
-                await self.playHumanMove(message)
+                await self.play_human_move(message, max_depth)
             elif move == "undo":
                 self.board.pop()
                 self.board.pop()
                 await message.channel.send(str(self.board))
-                await self.playHumanMove(message)
+                await self.play_human_move(message, max_depth)
             elif ch.Move.from_uci(move) in self.board.legal_moves:
                 self.board.push_uci(move)
                 await message.channel.send(str(self.board))
+                await message.channel.send("Thinking...")
+                self.play_bot_move(max_depth, ch.BLACK)  # Make the bot move
+                await message.channel.send(str(self.board))
             else:
                 await message.channel.send("Invalid move. Please try again.")
-                await self.playHumanMove(message)
+                await self.play_human_move(message, max_depth)
 
         except Exception as e:
             await message.channel.send("An error occurred. Please try again.")
-            await self.playHumanMove(message)
+            await self.play_human_move(message, max_depth)
 
     def play_bot_move(self, max_depth, color):
         bot = Bot(self.board, max_depth, color)
@@ -77,7 +80,7 @@ class ChessGame:
                 await ctx.send("Thinking...")
                 self.play_bot_move(max_depth, ch.WHITE)
                 await ctx.send(str(self.board))
-                await self.play_human_move(ctx)
+                await self.play_human_move(ctx, max_depth)
                 await ctx.send(str(self.board))
 
             await ctx.send(str(self.board))
@@ -85,7 +88,7 @@ class ChessGame:
         elif color == "w":
             while not self.board.is_checkmate():
                 await ctx.send(str(self.board))
-                await self.play_human_move(ctx)
+                await self.play_human_move(ctx, max_depth)
                 await ctx.send(str(self.board))
                 await ctx.send("Thinking...")
                 self.play_bot_move(max_depth, ch.BLACK)
