@@ -214,11 +214,13 @@ async def run_discord_bot():
     intents.typing = False
     intents.presences = False
 
-    await client.login(config["token"])
-    await client.start(config["token"])
+    try:
+        await client.login(config["token"])
+        await client.start(config["token"])
+        await asyncio.sleep(86400)  # Run the bot for 24 hours (adjust as needed)
+    finally:
+        await client.close()  # Close the client connection
 
 
 if __name__ == "__main__":
-    import asyncio
-
     asyncio.run(run_discord_bot())
