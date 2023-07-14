@@ -201,13 +201,12 @@ async def on_message(message):
 
     # Update the following line to include the correct channel ID
     # Replace CHANNEL_ID with the actual ID of the channel where you want the bot to respond
-    if message.channel.id == 817098293213397072:
-        if message.content.lower().startswith("!startchess"):
-            print("Start chess command received")
+    if message.content.lower().startswith("!startchess"):
+        print("Start chess command received")
 
-            newBoard = ch.Board()
-            game = Main(newBoard)
-            await game.startGame(message)
+        newBoard = ch.Board()
+        game = Main(newBoard)
+        await game.startGame(message)
 
 
 async def run_discord_bot():
