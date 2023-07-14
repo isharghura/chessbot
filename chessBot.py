@@ -119,7 +119,7 @@ class Main:
             response = await message.client.wait_for("message", check=check)
             move = response.content
 
-            if move == "!help":
+            if move == "/help":
                 await message.channel.send(
                     "Type in a legal move, for example: 'e4' or 'e5' or type 'undo'"
                 )
@@ -194,14 +194,14 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    print("Received message:", message.content)
+    print("Received message:", message)
 
     if message.author == client.user:
         return
 
     # Update the following line to include the correct channel ID
     # Replace CHANNEL_ID with the actual ID of the channel where you want the bot to respond
-    if message.content.lower().startswith("!startchess"):
+    if message.content.lower().startswith("/startchess"):
         print("Start chess command received")
 
         newBoard = ch.Board()
