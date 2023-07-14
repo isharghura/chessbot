@@ -97,10 +97,6 @@ class Bot:
             return bestMove
 
 
-intents = Intents.default()
-client = discord.Client(intents=intents)
-
-
 class Main:
     def __init__(self, board=ch.Board):
         self.board = board
@@ -187,6 +183,10 @@ class Main:
         self.board.reset()
 
 
+intents = Intents.default()
+client = discord.Client(intents=intents)
+
+
 @client.event
 async def on_ready():
     print(f"{client.user} is running!")
@@ -194,13 +194,11 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    print("Received message:", message)
-
     if message.author == client.user:
         return
 
-    # Update the following line to include the correct channel ID
-    # Replace CHANNEL_ID with the actual ID of the channel where you want the bot to respond
+    print("Received message:", message.content)
+
     if message.content.lower().startswith("/startchess"):
         print("Start chess command received")
 
@@ -220,7 +218,6 @@ async def run_discord_bot():
     await client.start(config["token"])
 
 
-# Run the Discord bot
 if __name__ == "__main__":
     import asyncio
 
