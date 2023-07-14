@@ -37,21 +37,32 @@ class ChessGame:
             elif move == "undo":
                 self.board.pop()
                 self.board.pop()
-                await message.channel.send(str(self.board))
+                await message.channel.send("Move undone.")
                 await self.play_human_move(message, max_depth)
             else:
                 try:
-                    move = self.board.parse_san(move)
+                    if len(move) == 2:
+                        # Handle simplified move format (e.g., 'e4')
+                        moves = list(self.board.legal_moves)
+                        for legal_move in moves:
+                            if move == ch.square_name(legal_move.to_square):
+                                move = legal_move
+                                break
+                        else:
+                            raise ValueError("Invalid move. Please try again.")
+                    else:
+                        move = self.board.parse_san(move)
+
                     if move in self.board.legal_moves:
                         self.board.push(move)
-                        await message.channel.send(str(self.board))
-                        move = self.bot.best_move()
-                        self.board.push(move)
-                        await message.channel.send(str(self.board))
+                        await self.play_bot_move(max_depth)  # Bot makes a move
+                        await message.channel.send(str(self.board))  # Print the board
                     else:
-                        await message.channel.send("Invalid move. Please try again.")
-                        await self.play_human_move(message, max_depth)
-                except ValueError:
+                        raise ValueError("Invalid move. Please try again.")
+                except ValueError as e:
+                    await message.channel.send(str(e))
+                    await self.play_human_move(message, max_depth)
+                except ch.MoveError as e:
                     await message.channel.send("Invalid move format. Please try again.")
                     await self.play_human_move(message, max_depth)
 
@@ -60,11 +71,10 @@ class ChessGame:
             await message.channel.send("An error occurred. Please try again.")
             await self.play_human_move(message, max_depth)
 
-    def play_bot_move(self, max_depth):
+    async def play_bot_move(self, max_depth):
         bot = Bot(self.board, max_depth, self.board.turn)
         move = bot.best_move()
         self.board.push(move)
-        return move
 
     async def start_game(self, ctx):
         color = None
@@ -89,21 +99,25 @@ class ChessGame:
                 pass
 
         if color == "b":
+            await ctx.send(str(self.board))
             while not self.board.is_checkmate():
-                await ctx.send(str(self.board))
-                await ctx.send("Thinking...")
-                self.play_bot_move(max_depth)
-                await ctx.send(str(self.board))
                 await self.play_human_move(ctx, max_depth)
+                if self.board.is_checkmate():
+                    break
+                await ctx.send("Thinking...")
+                await self.play_bot_move(max_depth)
+                await ctx.send(str(self.board))
 
             await ctx.send(str(self.board))
             await ctx.send(str(self.board.outcome()))
         elif color == "w":
             while not self.board.is_checkmate():
                 await ctx.send(str(self.board))
+                if self.board.is_checkmate():
+                    break
                 await self.play_human_move(ctx, max_depth)
                 await ctx.send("Thinking...")
-                self.play_bot_move(max_depth)
+                await self.play_bot_move(max_depth)
                 await ctx.send(str(self.board))
 
             await ctx.send(str(self.board))
