@@ -201,6 +201,15 @@ async def startchess(ctx):
     await game.startGame(ctx.message)
 
 
+@bot.event
+async def on_message(message):
+    if message.author == bot.user:
+        return
+
+    await bot.process_commands(message)
+    print("Received message:", message.content)
+
+
 async def run_discord_bot():
     with open("config.json") as config_file:
         config = json.load(config_file)
@@ -211,9 +220,9 @@ async def run_discord_bot():
     try:
         await bot.login(config["token"])
         await bot.start(config["token"])
-        await asyncio.sleep(86400)  # Run the bot for 24 hours (adjust as needed)
+        await asyncio.sleep(86400)
     finally:
-        await bot.close()  # Close the bot's connection
+        await bot.close()
 
 
 if __name__ == "__main__":
