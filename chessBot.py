@@ -2,8 +2,8 @@ import asyncio
 import json
 import chess as ch
 import random as rd
-import discord
-from discord import Intents, Client
+from discord import Intents
+from discord.ext import commands
 
 
 class Bot:
@@ -184,27 +184,21 @@ class Main:
 
 
 intents = Intents.default()
-client = discord.Client(intents=intents)
+bot = commands.Bot(command_prefix="/", intents=intents)
 
 
-@client.event
+@bot.event
 async def on_ready():
-    print(f"{client.user} is running!")
+    print(f"{bot.user} is running!")
 
 
-@client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
+@bot.command()
+async def startchess(ctx):
+    print("Start chess command received")
 
-    print("Received message:", message.content)
-
-    if message.content.lower().startswith("/startchess"):
-        print("Start chess command received")
-
-        newBoard = ch.Board()
-        game = Main(newBoard)
-        await game.startGame(message)
+    newBoard = ch.Board()
+    game = Main(newBoard)
+    await game.startGame(ctx.message)
 
 
 async def run_discord_bot():
@@ -215,11 +209,11 @@ async def run_discord_bot():
     intents.presences = False
 
     try:
-        await client.login(config["token"])
-        await client.start(config["token"])
+        await bot.login(config["token"])
+        await bot.start(config["token"])
         await asyncio.sleep(86400)  # Run the bot for 24 hours (adjust as needed)
     finally:
-        await client.close()  # Close the client connection
+        await bot.close()  # Close the bot's connection
 
 
 if __name__ == "__main__":
