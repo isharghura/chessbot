@@ -11,10 +11,10 @@ tracemalloc.start()
 
 
 class ChessGame:
-    def __init__(self, bot, board=ch.Board()):
+    def __init__(self, bot, channel_id, board=ch.Board()):
         self.bot = bot
+        self.channel_id = channel_id
         self.board = board
-        self.running = False
 
     async def play_human_move(self, message, max_depth):
         try:
@@ -66,6 +66,11 @@ class ChessGame:
         move = bot.best_move()
         self.board.push(move)
 
+        channel = self.bot.get_channel(self.channel_id)
+        legal_moves = [str(move)[10:-2] for move in self.board.legal_moves]
+        moves_str = ", ".join(legal_moves)
+        await channel.send(f"Legal moves: {moves_str}")
+
     async def start_game(self, ctx):
         self.running = True
         color = None
@@ -96,15 +101,12 @@ class ChessGame:
                 and not self.board.is_checkmate()
                 and not self.board.is_stalemate()
             ):
-                await self.play_bot_move(max_depth)
-                if not self.running:
-                    break
-                if self.board.is_checkmate() or self.board.is_stalemate():
-                    break
+                if not self.board.is_checkmate() and not self.board.is_stalemate():
+                    await self.play_bot_move(max_depth)
+                    if self.board.is_checkmate() or self.board.is_stalemate():
+                        break
                 await ctx.send(str(self.board))
                 await self.play_human_move(ctx, max_depth)
-                if not self.running:
-                    break
 
         elif color == "w":
             await ctx.send(str(self.board))
@@ -114,18 +116,14 @@ class ChessGame:
                 and not self.board.is_stalemate()
             ):
                 await self.play_human_move(ctx, max_depth)
-                if not self.running:
-                    break
-                if self.board.is_checkmate() or self.board.is_stalemate():
-                    break
                 await ctx.send(str(self.board))
-                await self.play_bot_move(max_depth)
-                if not self.running:
-                    break
+                if not self.board.is_checkmate() and not self.board.is_stalemate():
+                    await self.play_bot_move(max_depth)
+                    if self.board.is_checkmate() or self.board.is_stalemate():
+                        break
 
-        if self.running:
-            await ctx.send(str(self.board))
-            await ctx.send(str(self.board.outcome()))
+        await ctx.send(str(self.board))
+        await ctx.send(str(self.board.outcome()))
 
         self.board.reset()
 
@@ -239,7 +237,7 @@ async def start_chess(ctx):
     print("Start chess command received")
 
     new_board = ch.Board()
-    game = ChessGame(bot, new_board)
+    game = ChessGame(bot, ctx.channel.id, new_board)
     await game.start_game(ctx)
 
 
