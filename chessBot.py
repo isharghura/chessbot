@@ -88,14 +88,14 @@ class ChessGame:
 
     async def start_game(self, ctx):
         self.running = True
-        color = None
-        while color != "b" and color != "w":
-            await ctx.send("To pick a color, type 'w' or 'b':")
-            response = await self.bot.wait_for(
-                "message",
-                check=lambda m: m.author == ctx.author and m.channel == ctx.channel,
-            )
-            color = response.content.lower()
+        color = "w"
+        # while color != "b" and color != "w":
+        #     await ctx.send("To pick a color, type 'w' or 'b':")
+        #     response = await self.bot.wait_for(
+        #         "message",
+        #         check=lambda m: m.author == ctx.author and m.channel == ctx.channel,
+        #     )
+        # color = response.content.lower()
 
         max_depth = None
         while not isinstance(max_depth, int):
