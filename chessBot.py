@@ -17,10 +17,11 @@ class ChessGame:
         self.board = board
 
     async def play_human_move(self, message, max_depth):
+        if not self.running:
+            return
+
         try:
-            await message.channel.send(
-                "Legal moves: " + str(list(self.board.legal_moves))
-            )
+            legal_moves = [move.uci() for move in self.board.legal_moves]
             await message.channel.send("Make your move:")
 
             def check(m):
@@ -53,6 +54,9 @@ class ChessGame:
                     await message.channel.send("Invalid move format. Please try again.")
                     await self.play_human_move(message, max_depth)
 
+            if self.running:  # Only play bot move if the game is still running
+                await self.play_bot_move(max_depth)
+
         except Exception as e:
             print(f"An error occurred: {str(e)}")
             await message.channel.send("An error occurred. Please try again.")
@@ -62,14 +66,25 @@ class ChessGame:
         if not self.running:
             return
 
-        bot = Bot(self.board, max_depth, not self.board.turn)  # Invert the turn
+        await asyncio.sleep(1)  # Add a delay before the bot makes its move (optional)
+
+        bot_color = self.board.turn  # Get the color of the bot
+        bot = Bot(self.board, max_depth, bot_color)
         move = bot.best_move()
         self.board.push(move)
 
         channel = self.bot.get_channel(self.channel_id)
-        legal_moves = [str(move)[10:-2] for move in self.board.legal_moves]
-        moves_str = ", ".join(legal_moves)
-        await channel.send(f"Legal moves: {moves_str}")
+
+        if self.board.is_checkmate() or self.board.is_stalemate():
+            await channel.send(str(self.board))  # Send the final board after game end
+        else:
+            await channel.send(f"The bot played {move.uci()}")  # Send the bot's move
+            await channel.send(str(self.board))  # Send the updated board
+
+        if not self.running:
+            return  # Exit early if the game has been exited
+
+        return move
 
     async def start_game(self, ctx):
         self.running = True
@@ -94,35 +109,36 @@ class ChessGame:
             except ValueError:
                 pass
 
-        if color == "b":
+        if color == "w":
             await ctx.send(str(self.board))
             while (
                 self.running
                 and not self.board.is_checkmate()
                 and not self.board.is_stalemate()
             ):
-                if not self.board.is_checkmate() and not self.board.is_stalemate():
-                    await self.play_bot_move(max_depth)
+                if self.board.turn == ch.WHITE:
+                    await self.play_human_move(ctx, max_depth)
                     if self.board.is_checkmate() or self.board.is_stalemate():
                         break
-                await ctx.send(str(self.board))
-                await self.play_human_move(ctx, max_depth)
+                else:
+                    await self.play_bot_move(max_depth)
 
-        elif color == "w":
-            await ctx.send(str(self.board))
+        elif color == "b":
+            self.board.turn = ch.WHITE
             while (
                 self.running
                 and not self.board.is_checkmate()
                 and not self.board.is_stalemate()
             ):
-                await self.play_human_move(ctx, max_depth)
-                await ctx.send(str(self.board))
-                if not self.board.is_checkmate() and not self.board.is_stalemate():
+                if self.board.turn == ch.WHITE:
                     await self.play_bot_move(max_depth)
+                    await ctx.send(str(self.board))
                     if self.board.is_checkmate() or self.board.is_stalemate():
                         break
+                else:
+                    await self.play_human_move(ctx, max_depth)
 
-        await ctx.send(str(self.board))
+        await ctx.send(str(self.board))  # Print the final board
         await ctx.send(str(self.board.outcome()))
 
         self.board.reset()
@@ -232,9 +248,9 @@ async def on_ready():
         print(f"{bot.user} is running!")
 
 
-@bot.command(name="startchess")
-async def start_chess(ctx):
-    print("Start chess command received")
+@bot.command(name="startgame")
+async def start_game(ctx):
+    print("Start game command received")
 
     new_board = ch.Board()
     game = ChessGame(bot, ctx.channel.id, new_board)
