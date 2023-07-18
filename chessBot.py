@@ -138,8 +138,11 @@ class ChessGame:
                 else:
                     await self.play_human_move(ctx, max_depth)
 
-        await ctx.send(str(self.board))  # Print the final board
-        await ctx.send(str(self.board.outcome()))
+        if (
+            self.running
+        ):  # Only print the final board and outcome if the game is still running
+            await ctx.send(str(self.board))  # Print the final board
+            await ctx.send(str(self.board.outcome()))
 
         self.board.reset()
 
