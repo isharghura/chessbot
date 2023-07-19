@@ -69,22 +69,13 @@ class ChessGame:
             for col in range(8):
                 square = ch.square(col, 7 - row)
                 piece = self.board.piece_at(square)
+                if (row + col) % 2 == 0:
+                    square_color = "□"  # Light-colored square
+                else:
+                    square_color = "□"  # Dark-colored square
                 if piece:
                     symbol = ""
-                    if piece.color == ch.WHITE:
-                        if piece.piece_type == ch.PAWN:
-                            symbol = "♟︎"
-                        elif piece.piece_type == ch.KNIGHT:
-                            symbol = "♞"
-                        elif piece.piece_type == ch.BISHOP:
-                            symbol = "♝"
-                        elif piece.piece_type == ch.ROOK:
-                            symbol = "♜"
-                        elif piece.piece_type == ch.QUEEN:
-                            symbol = "♛"
-                        elif piece.piece_type == ch.KING:
-                            symbol = "♚"
-                    else:
+                    if piece.color == ch.BLACK:
                         if piece.piece_type == ch.PAWN:
                             symbol = "♙"
                         elif piece.piece_type == ch.KNIGHT:
@@ -97,9 +88,22 @@ class ChessGame:
                             symbol = "♕"
                         elif piece.piece_type == ch.KING:
                             symbol = "♔"
-                    line += symbol + " "
+                    else:
+                        if piece.piece_type == ch.PAWN:
+                            symbol = "♟"
+                        elif piece.piece_type == ch.KNIGHT:
+                            symbol = "♞"
+                        elif piece.piece_type == ch.BISHOP:
+                            symbol = "♝"
+                        elif piece.piece_type == ch.ROOK:
+                            symbol = "♜"
+                        elif piece.piece_type == ch.QUEEN:
+                            symbol = "♛"
+                        elif piece.piece_type == ch.KING:
+                            symbol = "♚"
+                    line += f"{symbol}"
                 else:
-                    line += ".    "
+                    line += f" {square_color} "
             lines.append(line)
         return "\n".join(lines)
 
@@ -119,7 +123,7 @@ class ChessGame:
         if self.board.is_checkmate() or self.board.is_stalemate():
             await channel.send(self.format_board())
         else:
-            await channel.send(f"The bot played {move.uci()}")  # Send the bot's move
+            # await channel.send(f"The bot played {move.uci()}")  # Send the bot's move
             await channel.send(self.format_board())
 
         if not self.running:
