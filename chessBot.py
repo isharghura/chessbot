@@ -54,7 +54,7 @@ class ChessGame:
                     await message.channel.send("Invalid move format. Please try again.")
                     await self.play_human_move(message, max_depth)
 
-            if self.running:  # Only play bot move if the game is still running
+            if self.running:
                 await self.play_bot_move(max_depth)
 
         except Exception as e:
@@ -70,9 +70,9 @@ class ChessGame:
                 square = ch.square(col, 7 - row)
                 piece = self.board.piece_at(square)
                 if (row + col) % 2 == 0:
-                    square_color = "□"  # Light-colored square
+                    square_color = "□"
                 else:
-                    square_color = "□"  # Dark-colored square
+                    square_color = "□"
                 if piece:
                     symbol = ""
                     if piece.color == ch.BLACK:
@@ -111,9 +111,9 @@ class ChessGame:
         if not self.running:
             return
 
-        await asyncio.sleep(1)  # Add a delay before the bot makes its move (optional)
+        await asyncio.sleep(1)
 
-        bot_color = self.board.turn  # Get the color of the bot
+        bot_color = self.board.turn
         bot = Bot(self.board, max_depth, bot_color)
         move = bot.best_move()
         self.board.push(move)
@@ -123,25 +123,16 @@ class ChessGame:
         if self.board.is_checkmate() or self.board.is_stalemate():
             await channel.send(self.format_board())
         else:
-            # await channel.send(f"The bot played {move.uci()}")  # Send the bot's move
             await channel.send(self.format_board())
 
         if not self.running:
-            return  # Exit early if the game has been exited
+            return
 
         return move
 
     async def start_game(self, ctx):
         self.running = True
         color = "w"
-        # while color != "b" and color != "w":
-        #     await ctx.send("To pick a color, type 'w' or 'b':")
-        #     response = await self.bot.wait_for(
-        #         "message",
-        #         check=lambda m: m.author == ctx.author and m.channel == ctx.channel,
-        #     )
-        # color = response.content.lower()
-
         max_depth = None
         while not isinstance(max_depth, int):
             await ctx.send("Choose depth:")
@@ -183,9 +174,7 @@ class ChessGame:
                 else:
                     await self.play_human_move(ctx, max_depth)
 
-        if (
-            self.running
-        ):  # Only print the final board and outcome if the game is still running
+        if self.running:
             await ctx.send(self.format_board())
             await ctx.send(self.format_board().outcome())
 
