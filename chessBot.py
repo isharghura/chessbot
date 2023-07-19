@@ -16,28 +16,6 @@ class ChessGame:
         self.channel_id = channel_id
         self.board = board
 
-    async def play_game(self, max_depth):
-        if not self.running:
-            return
-
-        await self.bot.wait_until_ready()
-        channel = self.bot.get_channel(self.channel_id)
-
-        if self.board.turn == ch.WHITE:
-            await channel.send(self.format_board())
-
-        while self.running and not self.board.is_game_over():
-            if self.board.turn == ch.WHITE:
-                await self.play_human_move(channel, max_depth)
-            else:
-                await self.play_bot_move(max_depth)
-
-        if self.running:
-            await channel.send(self.format_board())
-            await channel.send(self.board.result())
-
-        self.board.reset()
-
     async def play_human_move(self, message, max_depth):
         if not self.running:
             return
@@ -69,9 +47,6 @@ class ChessGame:
                         self.board.push(move)
                     else:
                         raise ValueError("Invalid move. Please try again.")
-                except ValueError as e:
-                    await message.channel.send(str(e))
-                    await self.play_human_move(message, max_depth)
                 except ch.MoveError as e:
                     await message.channel.send("Invalid move format. Please try again.")
                     await self.play_human_move(message, max_depth)
@@ -141,10 +116,24 @@ class ChessGame:
         bot_color = self.board.turn
         bot = Bot(self.board, max_depth, bot_color)
         move = bot.best_move()
-        self.board.push(move)
+
+        try:
+            self.board.push(move)
+        except AttributeError as e:
+            if "'float' object has no attribute 'from_square'" in str(e):
+                channel = self.bot.get_channel(self.channel_id)
+                await channel.send(self.format_board())
+                await channel.send("Checkmate!")
 
         channel = self.bot.get_channel(self.channel_id)
-        await channel.send(self.format_board())
+
+        if not self.board.is_checkmate() and not self.board.is_stalemate():
+            await channel.send(self.format_board())
+
+        if not self.running:
+            return
+
+        return move
 
     async def start_game(self, ctx):
         self.running = True
@@ -195,7 +184,6 @@ class ChessGame:
             await ctx.send(self.format_board().outcome())
 
         self.board.reset()
-        await self.play_game(max_depth)
 
 
 class Bot:
