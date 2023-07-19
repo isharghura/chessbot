@@ -16,6 +16,28 @@ class ChessGame:
         self.channel_id = channel_id
         self.board = board
 
+    async def play_game(self, max_depth):
+        if not self.running:
+            return
+
+        await self.bot.wait_until_ready()
+        channel = self.bot.get_channel(self.channel_id)
+
+        if self.board.turn == ch.WHITE:
+            await channel.send(self.format_board())
+
+        while self.running and not self.board.is_game_over():
+            if self.board.turn == ch.WHITE:
+                await self.play_human_move(channel, max_depth)
+            else:
+                await self.play_bot_move(max_depth)
+
+        if self.running:
+            await channel.send(self.format_board())
+            await channel.send(self.board.result())
+
+        self.board.reset()
+
     async def play_human_move(self, message, max_depth):
         if not self.running:
             return
@@ -53,6 +75,9 @@ class ChessGame:
                 except ch.MoveError as e:
                     await message.channel.send("Invalid move format. Please try again.")
                     await self.play_human_move(message, max_depth)
+                except AttributeError as e:
+                    if "'float' object has no attribute 'from_square'" in str(e):
+                        await message.channel.send("Checkmate!")
 
             if self.running:
                 await self.play_bot_move(max_depth)
@@ -119,16 +144,7 @@ class ChessGame:
         self.board.push(move)
 
         channel = self.bot.get_channel(self.channel_id)
-
-        if self.board.is_checkmate() or self.board.is_stalemate():
-            await channel.send(self.format_board())
-        else:
-            await channel.send(self.format_board())
-
-        if not self.running:
-            return
-
-        return move
+        await channel.send(self.format_board())
 
     async def start_game(self, ctx):
         self.running = True
@@ -179,6 +195,7 @@ class ChessGame:
             await ctx.send(self.format_board().outcome())
 
         self.board.reset()
+        await self.play_game(max_depth)
 
 
 class Bot:
