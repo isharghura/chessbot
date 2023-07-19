@@ -6,8 +6,11 @@ import discord
 from discord.ext import commands
 import logging
 import tracemalloc
+import os
+
 
 tracemalloc.start()
+token = os.environ.get("bt")
 
 
 class ChessGame:
@@ -301,11 +304,8 @@ async def start_game(ctx):
 
 
 async def run_discord_bot():
-    with open("config.json") as config_file:
-        config = json.load(config_file)
-
     try:
-        await bot.start(config["token"])
+        await bot.start(token)
     finally:
         await bot.close()
 
