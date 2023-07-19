@@ -62,6 +62,47 @@ class ChessGame:
             await message.channel.send("An error occurred. Please try again.")
             await self.play_human_move(message, max_depth)
 
+    def format_board(self):
+        lines = []
+        for row in range(8):
+            line = ""
+            for col in range(8):
+                square = ch.square(col, 7 - row)
+                piece = self.board.piece_at(square)
+                if piece:
+                    symbol = ""
+                    if piece.color == ch.WHITE:
+                        if piece.piece_type == ch.PAWN:
+                            symbol = "♟︎"
+                        elif piece.piece_type == ch.KNIGHT:
+                            symbol = "♞"
+                        elif piece.piece_type == ch.BISHOP:
+                            symbol = "♝"
+                        elif piece.piece_type == ch.ROOK:
+                            symbol = "♜"
+                        elif piece.piece_type == ch.QUEEN:
+                            symbol = "♛"
+                        elif piece.piece_type == ch.KING:
+                            symbol = "♚"
+                    else:
+                        if piece.piece_type == ch.PAWN:
+                            symbol = "♙"
+                        elif piece.piece_type == ch.KNIGHT:
+                            symbol = "♘"
+                        elif piece.piece_type == ch.BISHOP:
+                            symbol = "♗"
+                        elif piece.piece_type == ch.ROOK:
+                            symbol = "♖"
+                        elif piece.piece_type == ch.QUEEN:
+                            symbol = "♕"
+                        elif piece.piece_type == ch.KING:
+                            symbol = "♔"
+                    line += symbol + " "
+                else:
+                    line += ".    "
+            lines.append(line)
+        return "\n".join(lines)
+
     async def play_bot_move(self, max_depth):
         if not self.running:
             return
@@ -76,10 +117,10 @@ class ChessGame:
         channel = self.bot.get_channel(self.channel_id)
 
         if self.board.is_checkmate() or self.board.is_stalemate():
-            await channel.send(str(self.board))  # Send the final board after game end
+            await channel.send(self.format_board())
         else:
             await channel.send(f"The bot played {move.uci()}")  # Send the bot's move
-            await channel.send(str(self.board))  # Send the updated board
+            await channel.send(self.format_board())
 
         if not self.running:
             return  # Exit early if the game has been exited
@@ -110,7 +151,7 @@ class ChessGame:
                 pass
 
         if color == "w":
-            await ctx.send(str(self.board))
+            await ctx.send(self.format_board())
             while (
                 self.running
                 and not self.board.is_checkmate()
@@ -132,7 +173,7 @@ class ChessGame:
             ):
                 if self.board.turn == ch.WHITE:
                     await self.play_bot_move(max_depth)
-                    await ctx.send(str(self.board))
+                    await ctx.send(self.format_board())
                     if self.board.is_checkmate() or self.board.is_stalemate():
                         break
                 else:
@@ -141,8 +182,8 @@ class ChessGame:
         if (
             self.running
         ):  # Only print the final board and outcome if the game is still running
-            await ctx.send(str(self.board))  # Print the final board
-            await ctx.send(str(self.board.outcome()))
+            await ctx.send(self.format_board())
+            await ctx.send(self.format_board().outcome())
 
         self.board.reset()
 
