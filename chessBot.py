@@ -53,6 +53,7 @@ class ChessGame:
                 except AttributeError as e:
                     if "'float' object has no attribute 'from_square'" in str(e):
                         await message.channel.send("Checkmate!")
+                        self.running = False
 
             if self.running:
                 await self.play_bot_move(max_depth)
@@ -124,6 +125,7 @@ class ChessGame:
                 channel = self.bot.get_channel(self.channel_id)
                 await channel.send(self.format_board())
                 await channel.send("Checkmate!")
+                self.running = False
 
         channel = self.bot.get_channel(self.channel_id)
 
