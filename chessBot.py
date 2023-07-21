@@ -6,6 +6,8 @@ import discord
 from discord.ext import commands
 import logging
 import tracemalloc
+from keep_alive import keep_alive
+import os
 
 tracemalloc.start()
 
@@ -301,15 +303,14 @@ async def start_game(ctx):
 
 
 async def run_discord_bot():
-    with open("config.json") as config_file:
-        config = json.load(config_file)
-
+    my_secret = os.environ["token"]
     try:
-        await bot.start(config["token"])
+        await bot.start(my_secret)
     finally:
         await bot.close()
 
 
 if __name__ == "__main__":
     bot.ready = False
+    keep_alive()
     asyncio.run(run_discord_bot())
