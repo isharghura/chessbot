@@ -58,7 +58,7 @@ class ChessGame:
                         self.running = False
 
             if self.running:
-                await self.play_bot_move(max_depth)
+                await self.play_bot_move(max_depth=3, move_time_limit=3)
 
         except Exception as e:
             print(f"An error occurred: {str(e)}")
@@ -110,24 +110,20 @@ class ChessGame:
             lines.append(line)
         return "\n".join(lines)
 
-    async def play_bot_move(self, max_depth):
+    async def play_bot_move(self, max_depth, move_time_limit):
         if not self.running:
             return
 
-        await asyncio.sleep(1)
-
-        bot_color = self.board.turn
-        bot = Bot(self.board, max_depth, bot_color)
-        move = bot.best_move()
-
+        # Using asyncio.wait_for to set a time limit for the bot move calculation
         try:
+            move = await asyncio.wait_for(
+                self.calculate_bot_move(max_depth), timeout=move_time_limit
+            )
             self.board.push(move)
-        except AttributeError as e:
-            if "'float' object has no attribute 'from_square'" in str(e):
-                channel = self.bot.get_channel(self.channel_id)
-                await channel.send(self.format_board())
-                await channel.send("Checkmate!")
-                self.running = False
+        except asyncio.TimeoutError:
+            # Handle the case where the bot calculation exceeds the time limit
+            print("Bot move calculation exceeded time limit.")
+            # You can make a random move or choose a default move here if needed.
 
         channel = self.bot.get_channel(self.channel_id)
 
@@ -138,6 +134,11 @@ class ChessGame:
             return
 
         return move
+
+    async def calculate_bot_move(self, max_depth):
+        bot_color = self.board.turn
+        bot = Bot(self.board, max_depth, bot_color)
+        return bot.best_move()
 
     async def start_game(self, ctx):
         self.running = True
@@ -166,7 +167,7 @@ class ChessGame:
                     if self.board.is_checkmate() or self.board.is_stalemate():
                         break
                 else:
-                    await self.play_bot_move(max_depth)
+                    await self.play_bot_move(max_depth=3, move_time_limit=3)
 
         elif color == "b":
             self.board.turn = ch.WHITE
@@ -176,7 +177,7 @@ class ChessGame:
                 and not self.board.is_stalemate()
             ):
                 if self.board.turn == ch.WHITE:
-                    await self.play_bot_move(max_depth)
+                    await self.play_bot_move(max_depth=3, move_time_limit=3)
                     await ctx.send(self.format_board())
                     if self.board.is_checkmate() or self.board.is_stalemate():
                         break
