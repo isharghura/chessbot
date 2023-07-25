@@ -113,17 +113,13 @@ class ChessGame:
     async def play_bot_move(self, max_depth, move_time_limit):
         if not self.running:
             return
-
-        # Using asyncio.wait_for to set a time limit for the bot move calculation
         try:
             move = await asyncio.wait_for(
                 self.calculate_bot_move(max_depth), timeout=move_time_limit
             )
             self.board.push(move)
         except asyncio.TimeoutError:
-            # Handle the case where the bot calculation exceeds the time limit
             print("Bot move calculation exceeded time limit.")
-            # You can make a random move or choose a default move here if needed.
 
         channel = self.bot.get_channel(self.channel_id)
 
